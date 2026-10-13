@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="申论·综应·遴选 智能阅卷工作台：按官方阅卷规则生成结构化阅卷指令，可粘贴至任意 AI 完成批改。">
+  <title>申论·综应·遴选 智能阅卷工作台</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+  <!-- ============ 页头 ============ -->
+  <header class="app-header">
+    <div class="header-main">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">阅</span>
+        <div class="brand-text">
+          <h1>申论 · 综应 · 遴选 智能阅卷工作台</h1>
+          <p class="subtitle">踩点给分 · 范式切换 · 防幻觉强约束</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btnLibrary" class="btn btn-ghost" type="button">阅卷标准库</button>
+        <button id="btnHistory" class="btn btn-ghost" type="button">历史记录</button>
+      </div>
+    </div>
+
+    <!-- 范式提示条 -->
+    <div id="paradigmBar" class="paradigm-bar" role="status" aria-live="polite"></div>
+  </header>
+
+  <!-- ============ 工作台 ============ -->
+  <main class="workbench">
+
+    <!-- 左：输入区 -->
+    <section class="col col-input" aria-label="任务输入区">
+
+      <!-- 任务信息 -->
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">一、任务信息</h2>
+          <span class="card-sub">先定范式，再贴材料</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="examType">考试类型</label>
+            <select id="examType" class="select"></select>
+          </div>
+
+          <div class="field">
+            <label for="questionType">题型</label>
+            <select id="questionType" class="select"></select>
+          </div>
+
+          <div class="field">
+            <label for="score">满分</label>
+            <input id="score" class="input" type="number" min="1" placeholder="如 100 / 150 / 120">
+            <p class="hint">综应常见 150 分，遴选可能 120 分，勿默认 100 分</p>
+          </div>
+
+          <div class="field">
+            <label for="wordReq">字数要求</label>
+            <input id="wordReq" class="input" type="text" placeholder="如 不超过300字 / 800-1000字 / 不少于800字">
+            <p id="wordReqHint" class="hint"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 材料输入 -->
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">二、材料输入</h2>
+          <span class="card-sub">题干与给定材料为必填</span>
+        </div>
+
+        <div class="field">
+          <div class="field-label-row">
+            <label for="stem">题干</label>
+            <span id="stemCount" class="count-badge">0 字</span>
+          </div>
+          <textarea id="stem" class="textarea" rows="4" placeholder="粘贴题目要求、作答任务、字数与分值说明……"></textarea>
+        </div>
+
+        <div class="field">
+          <div class="field-label-row">
+            <label for="material">给定材料</label>
+            <span id="materialCount" class="count-badge">0 字</span>
+          </div>
+          <textarea id="material" class="textarea" rows="8" placeholder="粘贴给定材料全文；所有采分点必须 100% 来自本材料……"></textarea>
+        </div>
+
+        <div class="field">
+          <div class="field-label-row">
+            <label for="answer">考生作答</label>
+            <span id="answerCount" class="count-badge">0 字</span>
+          </div>
+          <textarea id="answer" class="textarea" rows="8" placeholder="粘贴考生原始作答，工具将逐句改写并给出采分点分析……"></textarea>
+        </div>
+
+        <!-- 字数面板 -->
+        <div id="wordPanel" class="word-panel" aria-live="polite"></div>
+      </div>
+
+      <!-- 操作区 -->
+      <div class="action-row">
+        <button id="btnGenerate" class="btn btn-primary btn-lg" type="button">生成阅卷指令</button>
+        <button id="btnReset" class="btn btn-ghost" type="button">重置</button>
+      </div>
+    </section>
+
+    <!-- 右：输出区 -->
+    <section class="col col-output" aria-label="阅卷指令输出区">
+      <div class="card output-card">
+        <div class="card-head">
+          <h2 class="card-title">三、阅卷指令</h2>
+          <div class="toolbar">
+            <button id="btnCopyAll" class="btn btn-mini" type="button">复制完整指令</button>
+            <button id="btnCopyRole" class="btn btn-mini" type="button">复制角色提示词</button>
+            <button id="btnDownload" class="btn btn-mini" type="button">下载为 .txt</button>
+          </div>
+        </div>
+
+        <div id="warnStrip" class="warn-strip hidden"></div>
+
+        <div id="outputWrap" class="output-wrap">
+          <div id="outputEmpty" class="output-empty">
+            <p class="output-empty-title">尚无阅卷指令</p>
+            <p class="output-empty-desc">填写左侧任务信息与材料后，点击「生成阅卷指令」。<br>生成结果包含完整角色规则 + 本次任务卡 + 7 段固定输出结构，可直接投喂给任意 AI。</p>
+          </div>
+          <pre id="output" class="output hidden" tabindex="0"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="app-footer">
+    踩点给分 · 范式切换 · 防幻觉强约束 ｜ 本工具生成符合官方阅卷规则的结构化指令，可粘贴至任意 AI 完成批改
+  </footer>
+
+  <!-- ============ 标准库抽屉 ============ -->
+  <aside id="libraryDrawer" class="drawer" aria-hidden="true" aria-label="阅卷标准库">
+    <div class="drawer-head">
+      <h2 class="drawer-title">阅卷标准库</h2>
+      <button id="btnCloseLibrary" class="btn btn-ghost btn-close" type="button" aria-label="关闭">关闭</button>
+    </div>
+    <div id="libraryBody" class="drawer-body"></div>
+  </aside>
+
+  <!-- ============ 历史抽屉 ============ -->
+  <aside id="historyDrawer" class="drawer" aria-hidden="true" aria-label="历史记录">
+    <div class="drawer-head">
+      <h2 class="drawer-title">历史记录</h2>
+      <div class="drawer-head-actions">
+        <button id="btnClearHistory" class="btn btn-danger btn-mini" type="button">清空历史</button>
+        <button id="btnCloseHistory" class="btn btn-ghost btn-close" type="button" aria-label="关闭">关闭</button>
+      </div>
+    </div>
+    <div class="drawer-body">
+      <p id="historyStorageNote" class="hint hint-warn hidden">当前环境不支持本地存储</p>
+      <div id="historyBody" class="history-body"></div>
+    </div>
+  </aside>
+
+  <div id="scrim" class="scrim hidden"></div>
+  <div id="toastHost" class="toast-host" aria-live="assertive"></div>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
